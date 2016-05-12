@@ -2,6 +2,7 @@
 
 # import libraries
 import nltk
+from nltk.tokenize import PunktSentenceTokenizer
 import sys # for argument vector
 import argparse # to parse arguments
 import re
@@ -41,7 +42,12 @@ def getGutenbrugLines(lines):
     return pg_lines
 
 def word_tokenizer(sents_text, pattern = r"\w+(?:[-']\w+)*|'|[-.(]+|\S\w*"):
+    # could also use custom trained tokenizer
+    # custom_sent_tokenizer = PunktsentenceTokenizer(train_text)
     return nltk.regexp_tokenize(sents_text, pattern)
+
+
+
 
 # the main function of the script
 def main():
@@ -54,17 +60,32 @@ def main():
         lines = fh.readlines()
         fh.close()
 
+        # get the text
         raw_text = " ".join(getGutenbrugLines(lines))
+
+        # turn to unicode (dammit)
         soup = BeautifulSoup(raw_text)
         raw_text = str(soup)
-        raw_text = raw_text.encode('ascii')
+        raw_text = raw_text.decode('utf-8')
+
+        # isolate sentenses
         sents_text = " ".join(sent_tokenizer.tokenize(raw_text))
+
+        # extract the tokens
         tokens = word_tokenizer(sents_text)
 
-        words = [w.lower() for w in tokens]
-        vocab = sorted(set(words))
-        print f, ":", len(vocab)
+        # convert to lowercase and stem
+        wnl = nltk.WordNetLemmatizer()
+        stop_words = set(nltk.corpus.stopwords.words('english'))
+        stop_words.update(['.', ',', '"', "'", '?', '!', ':', ';',
+                          '(', ')', '[', ']', '{', '}', '--'])
 
+        # words = [porter.stem(w.lower()) for w in tokens]
+        words = [wnl.lemmatize(w.lower()) for w in tokens if w.lower() not in stop_words]
+
+        print nltk.pos_tag(words[1:200])
+        # vocab = sorted(set(words))
+        # print f, ":", len(vocab)
 
 if __name__ == "__main__":
     main()
